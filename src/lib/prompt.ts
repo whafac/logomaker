@@ -144,7 +144,7 @@ function buildAvoidPrompt(avoidStyles: string[]): string | null {
   return `Avoid: ${avoids.join(", ")}`;
 }
 
-// 사용자 입력을 gpt-image-1 프롬프트로 변환
+// 사용자 입력을 GPT Image 1.5 프롬프트로 변환
 export function buildLogoPrompt(data: LogoFormData): string {
   const keywords = parseKeywords(data.keywords);
 

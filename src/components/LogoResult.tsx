@@ -189,7 +189,7 @@ export default function LogoResult({
             이번 생성 사용량
           </h3>
           <p className="mt-1 text-xs text-slate-500">
-            gpt-image-1 · medium · 1024×1024 · 투명 배경
+            gpt-image-1.5 · medium · 1024×1024 · 투명 배경
           </p>
 
           <dl className="mt-4 space-y-2 text-sm">

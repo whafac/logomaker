@@ -1,4 +1,4 @@
-// gpt-image-1 토큰 사용량 타입
+// GPT Image 1.5 토큰 사용량 타입
 export interface ImageUsageInfo {
   inputTokens: number;
   outputTokens: number;
@@ -14,27 +14,27 @@ export interface ImageCostInfo {
   exchangeRate: number;
 }
 
-// OpenAI gpt-image-1 공식 단가 (USD / 1M tokens)
+// OpenAI GPT Image 1.5 공식 단가 (USD / 1M tokens)
 const TEXT_INPUT_PRICE_PER_TOKEN = 5 / 1_000_000;
-const IMAGE_INPUT_PRICE_PER_TOKEN = 10 / 1_000_000;
-const IMAGE_OUTPUT_PRICE_PER_TOKEN = 40 / 1_000_000;
+const IMAGE_INPUT_PRICE_PER_TOKEN = 8 / 1_000_000;
+const IMAGE_OUTPUT_PRICE_PER_TOKEN = 32 / 1_000_000;
 
 // 품질·해상도별 이미지 생성 기본 요금 (USD)
 const PER_IMAGE_FEES: Record<string, Record<string, number>> = {
   low: {
-    "1024x1024": 0.011,
-    "1024x1536": 0.016,
-    "1536x1024": 0.016,
+    "1024x1024": 0.009,
+    "1024x1536": 0.013,
+    "1536x1024": 0.013,
   },
   medium: {
-    "1024x1024": 0.042,
-    "1024x1536": 0.063,
-    "1536x1024": 0.063,
+    "1024x1024": 0.034,
+    "1024x1536": 0.05,
+    "1536x1024": 0.05,
   },
   high: {
-    "1024x1024": 0.167,
-    "1024x1536": 0.25,
-    "1536x1024": 0.25,
+    "1024x1024": 0.133,
+    "1024x1536": 0.2,
+    "1536x1024": 0.2,
   },
 };
 

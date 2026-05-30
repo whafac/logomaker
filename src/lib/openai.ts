@@ -20,14 +20,14 @@ export interface LogoGenerationResult {
   usage: ImageUsageInfo;
 }
 
-// gpt-image-1로 로고 이미지 생성
+// gpt-image-1.5로 로고 이미지 생성
 export async function generateLogoImage(
   prompt: string
 ): Promise<LogoGenerationResult> {
   const openai = createOpenAIClient();
 
   const response = await openai.images.generate({
-    model: "gpt-image-1",
+    model: "gpt-image-1.5",
     prompt,
     n: 1,
     size: "1024x1024",
