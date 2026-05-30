@@ -1,10 +1,13 @@
 "use client";
 
 import Image from "next/image";
+import { ImageCostInfo, ImageUsageInfo, formatKrw, formatUsd } from "@/lib/cost";
 
 interface LogoResultProps {
   imageUrl: string;
   brandName: string;
+  usage: ImageUsageInfo;
+  cost: ImageCostInfo;
   onReset: () => void;
 }
 
@@ -12,6 +15,8 @@ interface LogoResultProps {
 export default function LogoResult({
   imageUrl,
   brandName,
+  usage,
+  cost,
   onReset,
 }: LogoResultProps) {
   const handleDownload = async () => {
@@ -65,6 +70,71 @@ export default function LogoResult({
         <button type="button" className="btn-secondary" onClick={onReset}>
           새 로고 만들기
         </button>
+      </div>
+
+      {/* 토큰 사용량 및 예상 비용 */}
+      <div className="mx-auto mt-8 max-w-md rounded-2xl border border-slate-200 bg-slate-50 p-5 text-left">
+        <h3 className="text-sm font-semibold text-slate-900">
+          이번 생성 사용량
+        </h3>
+        <p className="mt-1 text-xs text-slate-500">
+          gpt-image-1 · medium · 1024×1024 기준
+        </p>
+
+        <dl className="mt-4 space-y-2 text-sm">
+          <div className="flex items-center justify-between">
+            <dt className="text-slate-500">입력 토큰</dt>
+            <dd className="font-medium text-slate-900">
+              {usage.inputTokens.toLocaleString()} tokens
+            </dd>
+          </div>
+          <div className="flex items-center justify-between pl-3">
+            <dt className="text-xs text-slate-400">↳ 텍스트</dt>
+            <dd className="text-xs text-slate-600">
+              {usage.textInputTokens.toLocaleString()}
+            </dd>
+          </div>
+          <div className="flex items-center justify-between pl-3">
+            <dt className="text-xs text-slate-400">↳ 이미지</dt>
+            <dd className="text-xs text-slate-600">
+              {usage.imageInputTokens.toLocaleString()}
+            </dd>
+          </div>
+          <div className="flex items-center justify-between">
+            <dt className="text-slate-500">출력 토큰</dt>
+            <dd className="font-medium text-slate-900">
+              {usage.outputTokens.toLocaleString()} tokens
+            </dd>
+          </div>
+          <div className="flex items-center justify-between border-t border-slate-200 pt-2">
+            <dt className="font-medium text-slate-700">총 토큰</dt>
+            <dd className="font-semibold text-brand-700">
+              {usage.totalTokens.toLocaleString()} tokens
+            </dd>
+          </div>
+        </dl>
+
+        <div className="mt-4 rounded-xl bg-white px-4 py-3">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-slate-500">예상 비용</span>
+            <span className="font-semibold text-slate-900">
+              {formatUsd(cost.usd)}
+            </span>
+          </div>
+          <div className="mt-1 flex items-center justify-between">
+            <span className="text-xs text-slate-400">
+              환율 {cost.exchangeRate.toLocaleString()}원/USD
+            </span>
+            <span className="text-base font-bold text-brand-700">
+              약 {formatKrw(cost.krw)}
+            </span>
+          </div>
+        </div>
+
+        <p className="mt-3 text-xs leading-relaxed text-slate-400">
+          OpenAI 공식 단가 기준 추정치이며, 실제 청구 금액과 소수점 단위로
+          차이가 날 수 있습니다.
+        </p>
       </div>
     </div>
   );

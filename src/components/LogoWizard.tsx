@@ -14,13 +14,20 @@ import StepColors from "./steps/StepColors";
 import StepDetails from "./steps/StepDetails";
 import StepReview from "./steps/StepReview";
 import LogoResult from "./LogoResult";
+import { ImageCostInfo, ImageUsageInfo } from "@/lib/cost";
+
+interface GenerationResult {
+  imageUrl: string;
+  usage: ImageUsageInfo;
+  cost: ImageCostInfo;
+}
 
 // 멀티스텝 로고 생성 위저드 메인 컴포넌트
 export default function LogoWizard() {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<LogoFormData>(INITIAL_FORM_DATA);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [result, setResult] = useState<{ imageUrl: string } | null>(null);
+  const [result, setResult] = useState<GenerationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const totalSteps = WIZARD_STEPS.length;
@@ -76,7 +83,11 @@ export default function LogoWizard() {
         throw new Error(data.error || "로고 생성에 실패했습니다.");
       }
 
-      setResult({ imageUrl: data.imageUrl });
+      setResult({
+        imageUrl: data.imageUrl,
+        usage: data.usage,
+        cost: data.cost,
+      });
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "로고 생성 중 오류가 발생했습니다."
@@ -100,6 +111,8 @@ export default function LogoWizard() {
       <LogoResult
         imageUrl={result.imageUrl}
         brandName={formData.brandName}
+        usage={result.usage}
+        cost={result.cost}
         onReset={handleReset}
       />
     );

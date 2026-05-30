@@ -3,6 +3,7 @@ import { buildLogoPrompt } from "@/lib/prompt";
 import { generateLogoImage } from "@/lib/openai";
 import { uploadLogoToStorage } from "@/lib/storage";
 import { createServerSupabaseClient } from "@/lib/supabase";
+import { calculateImageCost } from "@/lib/cost";
 import { LogoFormData } from "@/types/logo";
 
 // 로고 생성 API
@@ -34,7 +35,8 @@ export async function POST(request: NextRequest) {
 
     // AI 프롬프트 생성 및 이미지 생성
     const prompt = buildLogoPrompt(body);
-    const imageBuffer = await generateLogoImage(prompt);
+    const { buffer: imageBuffer, usage } = await generateLogoImage(prompt);
+    const cost = calculateImageCost(usage, "medium", "1024x1024");
 
     // Supabase Storage에 영구 저장
     let imageUrl: string;
@@ -80,6 +82,8 @@ export async function POST(request: NextRequest) {
       imageUrl,
       prompt,
       logo: savedLogo,
+      usage,
+      cost,
     });
   } catch (error) {
     console.error("Logo generation error:", error);
