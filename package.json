@@ -10,10 +10,13 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.1",
+    "imagetracerjs": "^1.2.6",
+    "jszip": "^3.10.1",
     "next": "^15.2.4",
     "openai": "^4.91.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "sharp": "^0.34.5"
   },
   "devDependencies": {
     "@types/node": "^22.13.10",

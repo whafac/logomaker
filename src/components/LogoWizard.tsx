@@ -19,6 +19,7 @@ import { ImageCostInfo, ImageUsageInfo } from "@/lib/cost";
 
 interface GenerationResult {
   imageUrl: string;
+  svg: string | null;
   usage: ImageUsageInfo;
   cost: ImageCostInfo;
 }
@@ -92,6 +93,7 @@ export default function LogoWizard() {
 
       setResult({
         imageUrl: data.imageUrl,
+        svg: data.svg ?? null,
         usage: data.usage,
         cost: data.cost,
       });
@@ -117,7 +119,9 @@ export default function LogoWizard() {
     return (
       <LogoResult
         imageUrl={result.imageUrl}
+        svg={result.svg}
         brandName={formData.brandName}
+        colors={formData.colors}
         usage={result.usage}
         cost={result.cost}
         onReset={handleReset}

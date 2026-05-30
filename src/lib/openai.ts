@@ -33,6 +33,7 @@ export async function generateLogoImage(
     size: "1024x1024",
     quality: "medium",
     output_format: "png",
+    background: "transparent",
   });
 
   const base64Image = response.data?.[0]?.b64_json;

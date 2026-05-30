@@ -181,7 +181,7 @@ export function buildLogoPrompt(data: LogoFormData): string {
   }
 
   parts.push(
-    "Vector-style flat design, masterful use of negative space, distinctive memorable silhouette, scalable brand identity, white or transparent background, no mockup, no photorealistic elements"
+    "Vector-style flat design, masterful use of negative space, distinctive memorable silhouette, scalable brand identity, transparent background, isolated logo mark on alpha channel, no mockup, no photorealistic elements, no scene or environment"
   );
   parts.push(NEGATIVE_PROMPT);
 

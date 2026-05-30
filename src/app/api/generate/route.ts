@@ -4,6 +4,7 @@ import { generateLogoImage } from "@/lib/openai";
 import { uploadLogoToStorage } from "@/lib/storage";
 import { createServerSupabaseClient } from "@/lib/supabase";
 import { calculateImageCost } from "@/lib/cost";
+import { convertPngToSvg } from "@/lib/vectorize";
 import { LogoFormData, isKeywordsValid } from "@/types/logo";
 
 // 로고 생성 API
@@ -59,6 +60,14 @@ export async function POST(request: NextRequest) {
     const { buffer: imageBuffer, usage } = await generateLogoImage(prompt);
     const cost = calculateImageCost(usage, "medium", "1024x1024");
 
+    // PNG → SVG 벡터 변환 (추가 API 비용 없음)
+    let svg: string | null = null;
+    try {
+      svg = await convertPngToSvg(imageBuffer);
+    } catch (svgError) {
+      console.warn("SVG conversion failed:", svgError);
+    }
+
     // Supabase Storage에 영구 저장
     let imageUrl: string;
     try {
@@ -105,6 +114,7 @@ export async function POST(request: NextRequest) {
       logo: savedLogo,
       usage,
       cost,
+      svg,
     });
   } catch (error) {
     console.error("Logo generation error:", error);
