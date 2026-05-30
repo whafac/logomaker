@@ -4,7 +4,7 @@ import { generateLogoImage } from "@/lib/openai";
 import { uploadLogoToStorage } from "@/lib/storage";
 import { createServerSupabaseClient } from "@/lib/supabase";
 import { calculateImageCost } from "@/lib/cost";
-import { LogoFormData } from "@/types/logo";
+import { LogoFormData, isKeywordsValid } from "@/types/logo";
 
 // 로고 생성 API
 export async function POST(request: NextRequest) {
@@ -22,6 +22,27 @@ export async function POST(request: NextRequest) {
     if (!body.logoType || !body.style) {
       return NextResponse.json(
         { error: "로고 유형과 스타일을 선택해주세요." },
+        { status: 400 }
+      );
+    }
+
+    if (!body.industry) {
+      return NextResponse.json(
+        { error: "업종을 선택해주세요." },
+        { status: 400 }
+      );
+    }
+
+    if (!isKeywordsValid(body.keywords)) {
+      return NextResponse.json(
+        { error: "키워드를 2개 이상 입력해주세요." },
+        { status: 400 }
+      );
+    }
+
+    if (!body.moods?.length) {
+      return NextResponse.json(
+        { error: "브랜드 무드를 1개 이상 선택해주세요." },
         { status: 400 }
       );
     }

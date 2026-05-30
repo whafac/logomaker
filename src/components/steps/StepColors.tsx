@@ -1,6 +1,10 @@
 "use client";
 
-import { LogoFormData, COLOR_PRESETS } from "@/types/logo";
+import {
+  LogoFormData,
+  COLOR_PRESETS,
+  getRecommendedPresetNames,
+} from "@/types/logo";
 import { StepWrapper } from "../StepIndicator";
 
 interface StepColorsProps {
@@ -10,6 +14,10 @@ interface StepColorsProps {
 
 // 4단계: 색상 선택
 export default function StepColors({ data, onChange }: StepColorsProps) {
+  const recommendedNames = data.industry
+    ? getRecommendedPresetNames(data.industry)
+    : [];
+
   const handlePresetSelect = (colors: string[]) => {
     onChange({ colors: [...colors] });
   };
@@ -25,25 +33,43 @@ export default function StepColors({ data, onChange }: StepColorsProps) {
       title="색상 선택"
       subtitle="브랜드에 어울리는 컬러 팔레트를 선택하세요"
     >
+      {/* 업종 추천 안내 */}
+      {data.industry && recommendedNames.length > 0 && (
+        <p className="mb-4 rounded-xl bg-brand-50 px-4 py-3 text-center text-sm text-brand-700">
+          <span className="font-medium">{data.industry}</span> 업종에 어울리는
+          팔레트에 ✦ 표시가 있어요
+        </p>
+      )}
+
       {/* 프리셋 팔레트 */}
       <div className="mb-8">
-        <p className="mb-3 text-sm font-medium text-slate-600">추천 팔레트</p>
+        <p className="mb-3 text-sm font-medium text-slate-600">
+          추천 팔레트 ({COLOR_PRESETS.length}종)
+        </p>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {COLOR_PRESETS.map((preset) => {
             const isSelected =
               JSON.stringify(preset.colors) === JSON.stringify(data.colors);
+            const isRecommended = recommendedNames.includes(preset.name);
 
             return (
               <button
                 key={preset.name}
                 type="button"
-                className={`rounded-xl border-2 p-3 transition-all ${
+                className={`relative rounded-xl border-2 p-3 transition-all ${
                   isSelected
                     ? "border-brand-600 ring-2 ring-brand-600/20"
-                    : "border-slate-200 hover:border-brand-300"
+                    : isRecommended
+                      ? "border-brand-300 hover:border-brand-500"
+                      : "border-slate-200 hover:border-brand-300"
                 }`}
                 onClick={() => handlePresetSelect(preset.colors)}
               >
+                {isRecommended && (
+                  <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-brand-600 text-[10px] text-white">
+                    ✦
+                  </span>
+                )}
                 <div className="mb-2 flex gap-1">
                   {preset.colors.map((color, i) => (
                     <div

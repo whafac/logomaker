@@ -28,8 +28,17 @@ export default function StepReview({
     { label: "브랜드 이름", value: data.brandName },
     { label: "로고 유형", value: logoTypeLabel },
     { label: "디자인 스타일", value: styleLabel },
-    { label: "업종", value: data.industry || "미입력" },
-    { label: "키워드", value: data.keywords || "미입력" },
+    { label: "업종", value: data.industry },
+    { label: "키워드", value: data.keywords },
+    { label: "브랜드 무드", value: data.moods.join(", ") },
+    {
+      label: "상징/메타포",
+      value: data.symbolMetaphor || "미입력",
+    },
+    {
+      label: "피할 스타일",
+      value: data.avoidStyles.length > 0 ? data.avoidStyles.join(", ") : "없음",
+    },
   ];
 
   return (
@@ -47,7 +56,7 @@ export default function StepReview({
                 className="flex items-center justify-between border-b border-slate-100 pb-3 last:border-0 last:pb-0"
               >
                 <span className="text-sm text-slate-500">{item.label}</span>
-                <span className="text-sm font-medium text-slate-900">
+                <span className="max-w-[60%] truncate text-right text-sm font-medium text-slate-900">
                   {item.value}
                 </span>
               </div>

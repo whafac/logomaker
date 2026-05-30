@@ -5,6 +5,7 @@ import {
   LogoFormData,
   INITIAL_FORM_DATA,
   WIZARD_STEPS,
+  isKeywordsValid,
 } from "@/types/logo";
 import StepIndicator from "./StepIndicator";
 import StepBrandName from "./steps/StepBrandName";
@@ -47,6 +48,12 @@ export default function LogoWizard() {
       case 3:
         return !!formData.style;
       case 4:
+        return (
+          !!formData.industry &&
+          isKeywordsValid(formData.keywords) &&
+          formData.moods.length >= 1
+        );
+      case 5:
         return formData.colors.length > 0;
       default:
         return true;
@@ -140,10 +147,10 @@ export default function LogoWizard() {
         <StepStyle data={formData} onChange={handleChange} />
       )}
       {currentStep === 4 && (
-        <StepColors data={formData} onChange={handleChange} />
+        <StepDetails data={formData} onChange={handleChange} />
       )}
       {currentStep === 5 && (
-        <StepDetails data={formData} onChange={handleChange} />
+        <StepColors data={formData} onChange={handleChange} />
       )}
       {currentStep === 6 && (
         <StepReview
