@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import JSZip from "jszip";
 import { ImageCostInfo, ImageUsageInfo, formatKrw, formatUsd } from "@/lib/cost";
@@ -10,6 +11,14 @@ import {
   toSafeFileName,
 } from "@/lib/brandKit";
 import EditGuideModal from "./EditGuideModal";
+
+// Fabric.js는 SSR 불가 → 클라이언트에서만 로드
+const LogoCanvasEditor = dynamic(() => import("./LogoCanvasEditor"), {
+  ssr: false,
+  loading: () => (
+    <div className="py-16 text-center text-slate-500">캔버스 에디터 로딩 중...</div>
+  ),
+});
 
 interface LogoResultProps {
   imageUrl: string;
@@ -32,6 +41,7 @@ export default function LogoResult({
   onReset,
 }: LogoResultProps) {
   const [showGuide, setShowGuide] = useState(false);
+  const [showEditor, setShowEditor] = useState(false);
   const [isDownloadingKit, setIsDownloadingKit] = useState(false);
   const safeName = toSafeFileName(brandName);
 
@@ -100,6 +110,18 @@ export default function LogoResult({
     }
   };
 
+  // 캔버스 에디터 화면
+  if (showEditor) {
+    return (
+      <LogoCanvasEditor
+        imageUrl={imageUrl}
+        brandName={brandName}
+        colors={colors}
+        onClose={() => setShowEditor(false)}
+      />
+    );
+  }
+
   return (
     <>
       <div className="animate-slide-up text-center">
@@ -111,7 +133,7 @@ export default function LogoResult({
           {brandName} 로고
         </h2>
         <p className="mt-1 text-slate-500">
-          PNG · SVG · 브랜드 키트로 Canva/Photoshop에서 편집하세요
+          앱 내 캔버스 편집 또는 PNG · SVG · 브랜드 키트로 내보내기
         </p>
 
         {/* 투명 배경 미리보기 (체커보드 패턴) */}
@@ -134,9 +156,17 @@ export default function LogoResult({
           </div>
         </div>
 
-        {/* 다운로드 버튼 */}
+        {/* 다운로드 · 편집 버튼 */}
         <div className="mx-auto mt-8 flex max-w-md flex-col gap-3">
-          <button type="button" className="btn-primary" onClick={handleDownloadPng}>
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={() => setShowEditor(true)}
+          >
+            캔버스에서 편집하기
+          </button>
+
+          <button type="button" className="btn-secondary" onClick={handleDownloadPng}>
             PNG 다운로드 (투명 배경)
           </button>
 
