@@ -13,24 +13,24 @@ export function createOpenAIClient(): OpenAI {
   return new OpenAI({ apiKey });
 }
 
-// DALL-E 3로 로고 이미지 생성
-export async function generateLogoImage(prompt: string): Promise<string> {
+// gpt-image-1로 로고 이미지 생성 (base64 PNG 반환)
+export async function generateLogoImage(prompt: string): Promise<Buffer> {
   const openai = createOpenAIClient();
 
   const response = await openai.images.generate({
-    model: "dall-e-3",
+    model: "gpt-image-1",
     prompt,
     n: 1,
     size: "1024x1024",
-    quality: "standard",
-    response_format: "url",
+    quality: "medium",
+    output_format: "png",
   });
 
-  const imageUrl = response.data?.[0]?.url;
+  const base64Image = response.data?.[0]?.b64_json;
 
-  if (!imageUrl) {
+  if (!base64Image) {
     throw new Error("이미지 생성에 실패했습니다.");
   }
 
-  return imageUrl;
+  return Buffer.from(base64Image, "base64");
 }

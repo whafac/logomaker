@@ -34,18 +34,16 @@ export async function POST(request: NextRequest) {
 
     // AI 프롬프트 생성 및 이미지 생성
     const prompt = buildLogoPrompt(body);
-    const tempImageUrl = await generateLogoImage(prompt);
+    const imageBuffer = await generateLogoImage(prompt);
 
     // Supabase Storage에 영구 저장
-    let permanentImageUrl = tempImageUrl;
+    let imageUrl: string;
     try {
-      permanentImageUrl = await uploadLogoToStorage(
-        tempImageUrl,
-        body.brandName
-      );
+      imageUrl = await uploadLogoToStorage(imageBuffer, body.brandName);
     } catch (storageError) {
-      // Storage 실패 시 OpenAI 임시 URL 사용 (fallback)
-      console.warn("Storage upload failed, using temp URL:", storageError);
+      // Storage 실패 시 base64 data URL로 fallback
+      console.warn("Storage upload failed, using data URL:", storageError);
+      imageUrl = `data:image/png;base64,${imageBuffer.toString("base64")}`;
     }
 
     // DB에 로고 기록 저장
@@ -62,7 +60,7 @@ export async function POST(request: NextRequest) {
           industry: body.industry || null,
           keywords: body.keywords || null,
           description: body.description || null,
-          image_url: permanentImageUrl,
+          image_url: imageUrl,
           prompt,
         })
         .select()
@@ -79,7 +77,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      imageUrl: permanentImageUrl,
+      imageUrl,
       prompt,
       logo: savedLogo,
     });

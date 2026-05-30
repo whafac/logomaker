@@ -1,19 +1,12 @@
 import { createServerSupabaseClient } from "./supabase";
 
-// OpenAI에서 생성된 이미지를 Supabase Storage에 업로드
+// 생성된 이미지 버퍼를 Supabase Storage에 업로드
 export async function uploadLogoToStorage(
-  imageUrl: string,
+  imageBuffer: Buffer,
   brandName: string
 ): Promise<string> {
   const supabase = createServerSupabaseClient();
 
-  // OpenAI 임시 URL에서 이미지 다운로드
-  const response = await fetch(imageUrl);
-  if (!response.ok) {
-    throw new Error("생성된 이미지를 다운로드할 수 없습니다.");
-  }
-
-  const imageBuffer = await response.arrayBuffer();
   const fileName = `${Date.now()}-${brandName.replace(/[^a-zA-Z0-9가-힣]/g, "-")}.png`;
 
   const { error: uploadError } = await supabase.storage
