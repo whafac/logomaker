@@ -1,8 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, FabricImage, IText } from "fabric";
 import { toSafeFileName } from "@/lib/brandKit";
+import {
+  DEFAULT_EDITOR_FONT,
+  EDITOR_FONTS,
+  FONT_CATEGORY_LABELS,
+  FontCategory,
+  getEditorFontById,
+  groupEditorFontsByCategory,
+  loadEditorFont,
+} from "@/lib/editorFonts";
 
 interface LogoCanvasEditorProps {
   imageUrl: string;
@@ -29,8 +38,16 @@ export default function LogoCanvasEditor({
   const [backgroundColor, setBackgroundColor] = useState("#ffffff");
   const [transparentBg, setTransparentBg] = useState(false);
   const [textColor, setTextColor] = useState(colors[0] ?? "#2563eb");
+  const [selectedFontId, setSelectedFontId] = useState(DEFAULT_EDITOR_FONT.id);
+  const [isFontLoading, setIsFontLoading] = useState(false);
+  const [loadedPreviewFonts, setLoadedPreviewFonts] = useState<Set<string>>(
+    () => new Set([DEFAULT_EDITOR_FONT.id])
+  );
   const [isReady, setIsReady] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+
+  const fontsByCategory = useMemo(() => groupEditorFontsByCategory(), []);
+  const selectedFont = getEditorFontById(selectedFontId);
 
   // 캔버스 배경색 적용
   const applyBackground = useCallback((canvas: Canvas, transparent: boolean, color: string) => {
@@ -118,6 +135,38 @@ export default function LogoCanvasEditor({
     };
   }, [imageUrl, centerLogo]);
 
+  // 기본 폰트(Noto Sans KR) 선로드
+  useEffect(() => {
+    loadEditorFont(DEFAULT_EDITOR_FONT).catch(() => {
+      /* 기본 폰트 실패 시 시스템 폰트로 대체됨 */
+    });
+  }, []);
+
+  // 텍스트 선택 시 폰트 드롭다운 동기화
+  useEffect(() => {
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+
+    const syncFontFromSelection = () => {
+      const active = canvas.getActiveObject();
+      if (!active || active.type !== "i-text") return;
+
+      const activeFamily = (active as IText).fontFamily ?? "";
+      const matched = EDITOR_FONTS.find((font) => activeFamily.includes(font.family.split(",")[0].replace(/['"]/g, "").trim()));
+      if (matched) {
+        setSelectedFontId(matched.id);
+      }
+    };
+
+    canvas.on("selection:created", syncFontFromSelection);
+    canvas.on("selection:updated", syncFontFromSelection);
+
+    return () => {
+      canvas.off("selection:created", syncFontFromSelection);
+      canvas.off("selection:updated", syncFontFromSelection);
+    };
+  }, [isReady]);
+
   // 배경색 변경 반영
   useEffect(() => {
     const canvas = fabricRef.current;
@@ -125,25 +174,61 @@ export default function LogoCanvasEditor({
     applyBackground(canvas, transparentBg, backgroundColor);
   }, [backgroundColor, transparentBg, applyBackground]);
 
-  // 텍스트 레이어 추가
-  const handleAddText = () => {
+  // Google Font 로드 후 선택 폰트 적용
+  const applyFont = useCallback(async (fontId: string, applyToActiveText = true) => {
+    const font = getEditorFontById(fontId);
+    setIsFontLoading(true);
+
+    try {
+      await loadEditorFont(font);
+      setSelectedFontId(font.id);
+      setLoadedPreviewFonts((prev) => new Set(prev).add(font.id));
+
+      const canvas = fabricRef.current;
+      if (!canvas || !applyToActiveText) return;
+
+      const active = canvas.getActiveObject();
+      if (active && active.type === "i-text") {
+        (active as IText).set({ fontFamily: font.family });
+        canvas.requestRenderAll();
+      }
+    } catch {
+      alert(`"${font.label}" 폰트를 불러오지 못했습니다.`);
+    } finally {
+      setIsFontLoading(false);
+    }
+  }, []);
+
+  // 텍스트 레이어 추가 (선택된 Google Font 적용)
+  const handleAddText = async () => {
     const canvas = fabricRef.current;
     if (!canvas) return;
 
-    const text = new IText("슬로건을 입력하세요", {
-      left: CANVAS_SIZE / 2,
-      top: CANVAS_SIZE * 0.78,
-      originX: "center",
-      originY: "center",
-      fontFamily: "Arial, sans-serif",
-      fontSize: 28,
-      fill: textColor,
-      fontWeight: "600",
-    });
+    const font = getEditorFontById(selectedFontId);
+    setIsFontLoading(true);
 
-    canvas.add(text);
-    canvas.setActiveObject(text);
-    canvas.requestRenderAll();
+    try {
+      await loadEditorFont(font);
+
+      const text = new IText("슬로건을 입력하세요", {
+        left: CANVAS_SIZE / 2,
+        top: CANVAS_SIZE * 0.78,
+        originX: "center",
+        originY: "center",
+        fontFamily: font.family,
+        fontSize: 28,
+        fill: textColor,
+        fontWeight: "600",
+      });
+
+      canvas.add(text);
+      canvas.setActiveObject(text);
+      canvas.requestRenderAll();
+    } catch {
+      alert(`"${font.label}" 폰트를 불러오지 못했습니다.`);
+    } finally {
+      setIsFontLoading(false);
+    }
   };
 
   // 선택된 객체 삭제
@@ -263,12 +348,48 @@ export default function LogoCanvasEditor({
           </div>
         </div>
 
+        <div>
+          <label className="mb-2 block text-xs font-medium text-slate-600">
+            텍스트 폰트 (Google Fonts · 20종)
+          </label>
+          <select
+            value={selectedFontId}
+            onChange={(e) => applyFont(e.target.value)}
+            disabled={!isReady || isFontLoading}
+            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100 disabled:opacity-50"
+            style={{ fontFamily: selectedFont.family }}
+          >
+            {(Object.keys(fontsByCategory) as FontCategory[]).map((category) => (
+              <optgroup key={category} label={FONT_CATEGORY_LABELS[category]}>
+                {fontsByCategory[category].map((font) => (
+                  <option
+                    key={font.id}
+                    value={font.id}
+                    style={{
+                      fontFamily: loadedPreviewFonts.has(font.id)
+                        ? font.family
+                        : undefined,
+                    }}
+                  >
+                    {font.label}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+          <p className="mt-1 text-xs text-slate-400">
+            {isFontLoading
+              ? "폰트 로딩 중..."
+              : "선택한 폰트는 새 텍스트와 선택 중인 텍스트에 적용됩니다."}
+          </p>
+        </div>
+
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
             className="btn-secondary px-4 py-2 text-sm"
             onClick={handleAddText}
-            disabled={!isReady}
+            disabled={!isReady || isFontLoading}
           >
             + 텍스트 추가
           </button>
@@ -292,7 +413,7 @@ export default function LogoCanvasEditor({
 
         <p className="text-xs text-slate-400">
           로고를 드래그해 이동하고, 모서리 핸들로 크기·회전을 조절할 수 있습니다.
-          텍스트는 더블클릭으로 수정하세요. (추가 API 비용 없음)
+          텍스트는 더블클릭으로 수정하고, Google Fonts 20종 중 원하는 폰트를 선택하세요.
         </p>
       </div>
 
