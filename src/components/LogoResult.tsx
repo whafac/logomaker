@@ -27,6 +27,7 @@ interface LogoResultProps {
   colors: string[];
   usage: ImageUsageInfo;
   cost: ImageCostInfo;
+  onRegenerate: () => void;
   onReset: () => void;
 }
 
@@ -38,6 +39,7 @@ export default function LogoResult({
   colors,
   usage,
   cost,
+  onRegenerate,
   onReset,
 }: LogoResultProps) {
   const [showGuide, setShowGuide] = useState(false);
@@ -197,7 +199,16 @@ export default function LogoResult({
             Canva / Photoshop 편집 가이드 보기
           </button>
 
-          <button type="button" className="btn-secondary mt-2" onClick={onReset}>
+          {/* 이전 입력값 유지 후 확인 단계로 돌아가 재생성 */}
+          <button
+            type="button"
+            className="btn-secondary mt-2 border-brand-200 text-brand-700 hover:border-brand-300 hover:bg-brand-50"
+            onClick={onRegenerate}
+          >
+            설정 수정 후 재생성
+          </button>
+
+          <button type="button" className="btn-secondary" onClick={onReset}>
             새 로고 만들기
           </button>
         </div>

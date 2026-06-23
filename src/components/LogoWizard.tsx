@@ -114,6 +114,13 @@ export default function LogoWizard() {
     setError(null);
   };
 
+  // 결과 화면에서 확인 단계(6단계)로 돌아가 설정 수정 후 재생성
+  const handleRegenerate = () => {
+    setResult(null);
+    setError(null);
+    setCurrentStep(6);
+  };
+
   // 결과 화면
   if (result) {
     return (
@@ -124,6 +131,7 @@ export default function LogoWizard() {
         colors={formData.colors}
         usage={result.usage}
         cost={result.cost}
+        onRegenerate={handleRegenerate}
         onReset={handleReset}
       />
     );
