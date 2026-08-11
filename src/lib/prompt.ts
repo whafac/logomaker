@@ -175,6 +175,13 @@ export function buildLogoPrompt(data: LogoFormData): string {
     parts.push(`Additional creative direction: ${data.description.trim()}`);
   }
 
+  // 참고 이미지가 있으면 스타일 영감으로만 사용하고 복제는 금지
+  if (data.referenceImages?.length > 0) {
+    parts.push(
+      `Use the attached reference image${data.referenceImages.length > 1 ? "s" : ""} as visual inspiration for style, silhouette, geometry, spacing, and mood. Create an original logo for brand "${data.brandName}". Do not copy the reference mark, do not reuse its letterforms or brand name, and do not include any text from the reference image`
+    );
+  }
+
   const avoidPrompt = buildAvoidPrompt(data.avoidStyles);
   if (avoidPrompt) {
     parts.push(avoidPrompt);

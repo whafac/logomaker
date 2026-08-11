@@ -76,6 +76,27 @@ export default function StepReview({
                 ))}
               </div>
             </div>
+
+            {/* 참고 이미지 미리보기 */}
+            <div className="flex items-start justify-between gap-4">
+              <span className="pt-1 text-sm text-slate-500">참고 이미지</span>
+              {data.referenceImages?.length ? (
+                <div className="flex gap-2">
+                  {data.referenceImages.map((image) => (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      key={image.id}
+                      src={image.dataUrl}
+                      alt={image.name}
+                      title={image.name}
+                      className="h-12 w-12 rounded-lg border border-slate-200 bg-slate-50 object-contain p-1"
+                    />
+                  ))}
+                </div>
+              ) : (
+                <span className="text-sm font-medium text-slate-900">없음</span>
+              )}
+            </div>
           </div>
         </div>
 

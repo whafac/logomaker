@@ -6,11 +6,29 @@ import { createServerSupabaseClient } from "@/lib/supabase";
 import { calculateImageCost } from "@/lib/cost";
 import { convertPngToSvg } from "@/lib/vectorize";
 import { LogoFormData, isKeywordsValid } from "@/types/logo";
+import { parseReferenceImages } from "@/lib/referenceImage";
 
 // 로고 생성 API
 export async function POST(request: NextRequest) {
   try {
-    const body: LogoFormData = await request.json();
+    const body = (await request.json()) as LogoFormData;
+
+    let referenceImages;
+    try {
+      referenceImages = parseReferenceImages(body.referenceImages);
+    } catch (parseError) {
+      return NextResponse.json(
+        {
+          error:
+            parseError instanceof Error
+              ? parseError.message
+              : "참고 이미지를 확인하지 못했습니다.",
+        },
+        { status: 400 }
+      );
+    }
+
+    body.referenceImages = referenceImages;
 
     // 필수 필드 검증
     if (!body.brandName?.trim()) {
@@ -57,7 +75,10 @@ export async function POST(request: NextRequest) {
 
     // AI 프롬프트 생성 및 이미지 생성
     const prompt = buildLogoPrompt(body);
-    const { buffer: imageBuffer, usage } = await generateLogoImage(prompt);
+    const { buffer: imageBuffer, usage } = await generateLogoImage(
+      prompt,
+      referenceImages
+    );
     const cost = calculateImageCost(usage, "medium", "1024x1024");
 
     // PNG → SVG 벡터 변환 (추가 API 비용 없음)

@@ -1,5 +1,7 @@
-import OpenAI from "openai";
+import OpenAI, { toFile } from "openai";
 import { ImageUsageInfo, parseImageUsage } from "./cost";
+import { parseReferenceDataUrl } from "./referenceImage";
+import { ReferenceImage } from "@/types/logo";
 
 // OpenAI 클라이언트 생성
 export function createOpenAIClient(): OpenAI {
@@ -20,21 +22,41 @@ export interface LogoGenerationResult {
   usage: ImageUsageInfo;
 }
 
-// gpt-image-1.5로 로고 이미지 생성
+// gpt-image-1.5로 로고 이미지 생성 (참고 이미지가 있으면 edit 엔드포인트 사용)
 export async function generateLogoImage(
-  prompt: string
+  prompt: string,
+  referenceImages: ReferenceImage[] = []
 ): Promise<LogoGenerationResult> {
   const openai = createOpenAIClient();
 
-  const response = await openai.images.generate({
-    model: "gpt-image-1.5",
-    prompt,
-    n: 1,
-    size: "1024x1024",
-    quality: "medium",
-    output_format: "png",
-    background: "transparent",
-  });
+  const response =
+    referenceImages.length > 0
+      ? await openai.images.edit({
+          model: "gpt-image-1.5",
+          prompt,
+          image: await Promise.all(
+            referenceImages.map(async (image, index) => {
+              const { buffer, mimeType } = parseReferenceDataUrl(image.dataUrl);
+              const extension = mimeType.split("/")[1] ?? "png";
+              return toFile(buffer, `reference-${index + 1}.${extension}`, {
+                type: mimeType,
+              });
+            })
+          ),
+          n: 1,
+          size: "1024x1024",
+          quality: "medium",
+          background: "transparent",
+        })
+      : await openai.images.generate({
+          model: "gpt-image-1.5",
+          prompt,
+          n: 1,
+          size: "1024x1024",
+          quality: "medium",
+          output_format: "png",
+          background: "transparent",
+        });
 
   const base64Image = response.data?.[0]?.b64_json;
   const usage = response.usage;

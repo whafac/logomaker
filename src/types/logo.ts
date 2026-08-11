@@ -1,3 +1,11 @@
+// 추가 요청사항에 첨부하는 참고 이미지
+export interface ReferenceImage {
+  id: string;
+  name: string;
+  mimeType: string;
+  dataUrl: string;
+}
+
 // 로고 생성 위저드에서 수집하는 사용자 입력 타입
 export interface LogoFormData {
   brandName: string;
@@ -10,6 +18,7 @@ export interface LogoFormData {
   avoidStyles: string[];
   symbolMetaphor: string;
   description: string;
+  referenceImages: ReferenceImage[];
 }
 
 export type LogoType =
@@ -180,6 +189,7 @@ export const INITIAL_FORM_DATA: LogoFormData = {
   avoidStyles: [],
   symbolMetaphor: "",
   description: "",
+  referenceImages: [],
 };
 
 export const WIZARD_STEPS = [

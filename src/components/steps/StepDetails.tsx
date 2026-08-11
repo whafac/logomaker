@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef, useState } from "react";
 import {
   LogoFormData,
   INDUSTRY_OPTIONS,
@@ -8,6 +9,10 @@ import {
   AVOID_STYLE_OPTIONS,
   parseKeywords,
 } from "@/types/logo";
+import {
+  MAX_REFERENCE_IMAGES,
+} from "@/lib/referenceImage";
+import { normalizeReferenceImage } from "@/lib/referenceImageClient";
 import { StepWrapper } from "../StepIndicator";
 
 interface StepDetailsProps {
@@ -17,6 +22,9 @@ interface StepDetailsProps {
 
 // 5단계: 브랜드 정보 입력 (업종, 키워드, 무드 등)
 export default function StepDetails({ data, onChange }: StepDetailsProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isProcessingImage, setIsProcessingImage] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
   const keywordCount = parseKeywords(data.keywords).length;
   const suggestions =
     INDUSTRY_KEYWORD_SUGGESTIONS[data.industry] ??
@@ -40,6 +48,48 @@ export default function StepDetails({ data, onChange }: StepDetailsProps) {
     }
     if (data.moods.length >= 3) return;
     onChange({ moods: [...data.moods, mood] });
+  };
+
+  // 참고 이미지 첨부 (최대 2장)
+  const handleReferenceFiles = async (fileList: FileList | null) => {
+    if (!fileList || fileList.length === 0) return;
+
+    const remaining = MAX_REFERENCE_IMAGES - (data.referenceImages?.length ?? 0);
+    if (remaining <= 0) {
+      setImageError(`참고 이미지는 최대 ${MAX_REFERENCE_IMAGES}장까지 첨부할 수 있습니다.`);
+      return;
+    }
+
+    setIsProcessingImage(true);
+    setImageError(null);
+
+    try {
+      const selected = Array.from(fileList).slice(0, remaining);
+      const nextImages = [...(data.referenceImages ?? [])];
+
+      for (const file of selected) {
+        nextImages.push(await normalizeReferenceImage(file));
+      }
+
+      onChange({ referenceImages: nextImages });
+    } catch (error) {
+      setImageError(
+        error instanceof Error ? error.message : "이미지를 첨부하지 못했습니다."
+      );
+    } finally {
+      setIsProcessingImage(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  // 첨부한 참고 이미지 제거
+  const handleRemoveReferenceImage = (id: string) => {
+    onChange({
+      referenceImages: (data.referenceImages ?? []).filter((image) => image.id !== id),
+    });
+    setImageError(null);
   };
 
   // 피하고 싶은 스타일 토글 (최대 2개)
@@ -228,6 +278,68 @@ export default function StepDetails({ data, onChange }: StepDetailsProps) {
           <p className="mt-1 text-right text-xs text-slate-400">
             {data.description.length}/300
           </p>
+
+          {/* 원하는 느낌의 참고 이미지/로고 첨부 */}
+          <div className="mt-3">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              multiple
+              className="hidden"
+              onChange={(event) => handleReferenceFiles(event.target.files)}
+            />
+            <button
+              type="button"
+              className="btn-secondary w-full text-sm"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={
+                isProcessingImage ||
+                (data.referenceImages?.length ?? 0) >= MAX_REFERENCE_IMAGES
+              }
+            >
+              {isProcessingImage
+                ? "이미지 처리 중..."
+                : "참고 이미지 첨부"}
+            </button>
+            <p className="mt-2 text-xs text-slate-400">
+              PNG, JPG, WEBP · 최대 {MAX_REFERENCE_IMAGES}장 · 8MB 이하
+            </p>
+
+            {imageError && (
+              <p className="mt-2 text-xs text-red-600">{imageError}</p>
+            )}
+
+            {(data.referenceImages?.length ?? 0) > 0 && (
+              <div className="mt-3 grid grid-cols-2 gap-3">
+                {(data.referenceImages ?? []).map((image) => (
+                  <div
+                    key={image.id}
+                    className="relative overflow-hidden rounded-xl border border-slate-200 bg-slate-50"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={image.dataUrl}
+                      alt={image.name}
+                      className="h-28 w-full object-contain p-2"
+                    />
+                    <div className="flex items-center justify-between gap-2 border-t border-slate-200 px-2 py-1.5">
+                      <p className="truncate text-[11px] text-slate-500">
+                        {image.name}
+                      </p>
+                      <button
+                        type="button"
+                        className="shrink-0 text-[11px] text-red-500 hover:text-red-600"
+                        onClick={() => handleRemoveReferenceImage(image.id)}
+                      >
+                        삭제
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </StepWrapper>
