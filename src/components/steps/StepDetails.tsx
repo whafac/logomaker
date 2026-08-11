@@ -24,6 +24,7 @@ interface StepDetailsProps {
 export default function StepDetails({ data, onChange }: StepDetailsProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isProcessingImage, setIsProcessingImage] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
   const keywordCount = parseKeywords(data.keywords).length;
   const suggestions =
@@ -91,6 +92,9 @@ export default function StepDetails({ data, onChange }: StepDetailsProps) {
     });
     setImageError(null);
   };
+
+  const canAttachMore =
+    (data.referenceImages?.length ?? 0) < MAX_REFERENCE_IMAGES;
 
   // 피하고 싶은 스타일 토글 (최대 2개)
   const handleAvoidToggle = (style: string) => {
@@ -262,6 +266,101 @@ export default function StepDetails({ data, onChange }: StepDetailsProps) {
           </div>
         </div>
 
+        {/* 참고 이미지 첨부 (선택) — 추가 요청사항보다 위에 두어 바로 보이게 함 */}
+        <div>
+          <label className="mb-2 block text-sm font-medium text-slate-700">
+            참고 이미지
+            <span className="ml-2 text-xs font-normal text-slate-400">
+              선택 · 원하는 느낌의 로고/이미지
+            </span>
+          </label>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            multiple
+            className="sr-only"
+            onChange={(event) => handleReferenceFiles(event.target.files)}
+          />
+
+          <button
+            type="button"
+            disabled={isProcessingImage || !canAttachMore}
+            onClick={() => fileInputRef.current?.click()}
+            onDragEnter={(event) => {
+              event.preventDefault();
+              if (canAttachMore) setIsDragOver(true);
+            }}
+            onDragOver={(event) => {
+              event.preventDefault();
+              if (canAttachMore) setIsDragOver(true);
+            }}
+            onDragLeave={(event) => {
+              event.preventDefault();
+              setIsDragOver(false);
+            }}
+            onDrop={(event) => {
+              event.preventDefault();
+              setIsDragOver(false);
+              handleReferenceFiles(event.dataTransfer.files);
+            }}
+            className={`flex w-full flex-col items-center justify-center rounded-2xl border-2 border-dashed px-4 py-8 text-center transition-colors ${
+              isDragOver
+                ? "border-brand-500 bg-brand-50"
+                : "border-brand-300 bg-brand-50/60 hover:border-brand-500 hover:bg-brand-50"
+            } disabled:cursor-not-allowed disabled:opacity-60`}
+          >
+            <span className="mb-2 text-2xl" aria-hidden>
+              🖼️
+            </span>
+            <span className="text-sm font-semibold text-brand-700">
+              {isProcessingImage
+                ? "이미지 처리 중..."
+                : canAttachMore
+                  ? "클릭하거나 이미지를 여기에 놓으세요"
+                  : "최대 장수에 도달했습니다"}
+            </span>
+            <span className="mt-1 text-xs text-slate-500">
+              PNG, JPG, WEBP · 최대 {MAX_REFERENCE_IMAGES}장 · 8MB 이하
+            </span>
+          </button>
+
+          {imageError && (
+            <p className="mt-2 text-xs text-red-600">{imageError}</p>
+          )}
+
+          {(data.referenceImages?.length ?? 0) > 0 && (
+            <div className="mt-3 grid grid-cols-2 gap-3">
+              {(data.referenceImages ?? []).map((image) => (
+                <div
+                  key={image.id}
+                  className="relative overflow-hidden rounded-xl border border-slate-200 bg-slate-50"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={image.dataUrl}
+                    alt={image.name}
+                    className="h-28 w-full object-contain p-2"
+                  />
+                  <div className="flex items-center justify-between gap-2 border-t border-slate-200 px-2 py-1.5">
+                    <p className="truncate text-[11px] text-slate-500">
+                      {image.name}
+                    </p>
+                    <button
+                      type="button"
+                      className="shrink-0 text-[11px] text-red-500 hover:text-red-600"
+                      onClick={() => handleRemoveReferenceImage(image.id)}
+                    >
+                      삭제
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         {/* 추가 설명 (선택) */}
         <div>
           <label className="mb-2 block text-sm font-medium text-slate-700">
@@ -278,68 +377,6 @@ export default function StepDetails({ data, onChange }: StepDetailsProps) {
           <p className="mt-1 text-right text-xs text-slate-400">
             {data.description.length}/300
           </p>
-
-          {/* 원하는 느낌의 참고 이미지/로고 첨부 */}
-          <div className="mt-3">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/png,image/jpeg,image/webp"
-              multiple
-              className="hidden"
-              onChange={(event) => handleReferenceFiles(event.target.files)}
-            />
-            <button
-              type="button"
-              className="btn-secondary w-full text-sm"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={
-                isProcessingImage ||
-                (data.referenceImages?.length ?? 0) >= MAX_REFERENCE_IMAGES
-              }
-            >
-              {isProcessingImage
-                ? "이미지 처리 중..."
-                : "참고 이미지 첨부"}
-            </button>
-            <p className="mt-2 text-xs text-slate-400">
-              PNG, JPG, WEBP · 최대 {MAX_REFERENCE_IMAGES}장 · 8MB 이하
-            </p>
-
-            {imageError && (
-              <p className="mt-2 text-xs text-red-600">{imageError}</p>
-            )}
-
-            {(data.referenceImages?.length ?? 0) > 0 && (
-              <div className="mt-3 grid grid-cols-2 gap-3">
-                {(data.referenceImages ?? []).map((image) => (
-                  <div
-                    key={image.id}
-                    className="relative overflow-hidden rounded-xl border border-slate-200 bg-slate-50"
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={image.dataUrl}
-                      alt={image.name}
-                      className="h-28 w-full object-contain p-2"
-                    />
-                    <div className="flex items-center justify-between gap-2 border-t border-slate-200 px-2 py-1.5">
-                      <p className="truncate text-[11px] text-slate-500">
-                        {image.name}
-                      </p>
-                      <button
-                        type="button"
-                        className="shrink-0 text-[11px] text-red-500 hover:text-red-600"
-                        onClick={() => handleRemoveReferenceImage(image.id)}
-                      >
-                        삭제
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
         </div>
       </div>
     </StepWrapper>
