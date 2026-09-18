@@ -9,28 +9,45 @@ import { StepWrapper } from "../StepIndicator";
 
 interface StepReviewProps {
   data: LogoFormData;
-  isGenerating: boolean;
-  onGenerate: () => void;
+  isLoadingConcepts: boolean;
+  onRequestConcepts: () => void;
 }
 
-// 6단계: 입력 내용 확인 및 생성
+// 6단계: 입력 내용 확인 후 콘셉트 제안 요청
 export default function StepReview({
   data,
-  isGenerating,
-  onGenerate,
+  isLoadingConcepts,
+  onRequestConcepts,
 }: StepReviewProps) {
   const logoTypeLabel =
     LOGO_TYPE_OPTIONS.find((o) => o.value === data.logoType)?.label ?? "-";
   const styleLabel =
     STYLE_OPTIONS.find((o) => o.value === data.style)?.label ?? "-";
+  const displayName = data.brandNameExact.trim() || data.brandName;
 
   const summaryItems = [
     { label: "브랜드 이름", value: data.brandName },
+    { label: "정확한 표기", value: displayName },
     { label: "로고 유형", value: logoTypeLabel },
     { label: "디자인 스타일", value: styleLabel },
     { label: "업종", value: data.industry },
     { label: "키워드", value: data.keywords },
     { label: "브랜드 무드", value: data.moods.join(", ") },
+    {
+      label: "주요 고객",
+      value: data.targetAudience.trim() || "미입력",
+    },
+    {
+      label: "핵심 가치",
+      value: data.coreValues.trim() || "미입력",
+    },
+    {
+      label: "사용 매체",
+      value:
+        (data.usageMedia?.length ?? 0) > 0
+          ? data.usageMedia.join(", ")
+          : "미입력",
+    },
     {
       label: "상징/메타포",
       value: data.symbolMetaphor || "미입력",
@@ -39,15 +56,21 @@ export default function StepReview({
       label: "피할 스타일",
       value: data.avoidStyles.length > 0 ? data.avoidStyles.join(", ") : "없음",
     },
+    {
+      label: "생성 방식",
+      value:
+        data.symbolTextSeparate && data.logoType !== "wordmark"
+          ? "심볼 시안 + 편집 가능 브랜드명"
+          : "통합 시안",
+    },
   ];
 
   return (
     <StepWrapper
-      title="확인 및 생성"
-      subtitle="입력하신 내용을 확인하고 로고를 생성하세요"
+      title="확인"
+      subtitle="입력하신 내용을 확인한 뒤 서로 다른 디자인 방향 3안을 제안받으세요"
     >
       <div className="mx-auto max-w-lg">
-        {/* 요약 카드 */}
         <div className="mb-6 rounded-2xl border border-slate-200 bg-white p-6">
           <div className="space-y-4">
             {summaryItems.map((item) => (
@@ -62,7 +85,6 @@ export default function StepReview({
               </div>
             ))}
 
-            {/* 색상 미리보기 */}
             <div className="flex items-center justify-between">
               <span className="text-sm text-slate-500">색상</span>
               <div className="flex gap-2">
@@ -77,7 +99,6 @@ export default function StepReview({
               </div>
             </div>
 
-            {/* 참고 이미지 미리보기 */}
             <div className="flex items-start justify-between gap-4">
               <span className="pt-1 text-sm text-slate-500">참고 이미지</span>
               {data.referenceImages?.length ? (
@@ -100,15 +121,14 @@ export default function StepReview({
           </div>
         </div>
 
-        {/* 생성 버튼 */}
         <button
           type="button"
           className="btn-primary w-full py-4 text-base"
-          onClick={onGenerate}
-          disabled={isGenerating}
+          onClick={onRequestConcepts}
+          disabled={isLoadingConcepts}
         >
-          {isGenerating ? (
-            <span className="flex items-center gap-2">
+          {isLoadingConcepts ? (
+            <span className="flex items-center justify-center gap-2">
               <svg
                 className="h-5 w-5 animate-spin"
                 viewBox="0 0 24 24"
@@ -128,15 +148,16 @@ export default function StepReview({
                   d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
                 />
               </svg>
-              AI가 로고를 만들고 있어요...
+              디자인 방향을 정리하는 중...
             </span>
           ) : (
-            "✨ 로고 생성하기"
+            "디자인 방향 3안 제안받기"
           )}
         </button>
 
         <p className="mt-3 text-center text-xs text-slate-400">
-          생성에 약 15~30초가 소요됩니다
+          콘셉트를 고른 뒤에 로고 시안이 생성됩니다. 명함·간판 목업은 포함하지
+          않습니다.
         </p>
       </div>
     </StepWrapper>

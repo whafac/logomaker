@@ -1,4 +1,10 @@
-import { LogoFormData, LogoType, DesignStyle, parseKeywords } from "@/types/logo";
+import {
+  LogoFormData,
+  LogoType,
+  DesignStyle,
+  LogoConcept,
+  parseKeywords,
+} from "@/types/logo";
 
 // 로고 유형별 상세 영문 설명 (AI 프롬프트용)
 const LOGO_TYPE_PROMPTS: Record<LogoType, string> = {
@@ -145,15 +151,48 @@ function buildAvoidPrompt(avoidStyles: string[]): string | null {
 }
 
 // 사용자 입력을 GPT Image 1.5 프롬프트로 변환
-export function buildLogoPrompt(data: LogoFormData): string {
+export function buildLogoPrompt(
+  data: LogoFormData,
+  options?: {
+    concept?: LogoConcept | null;
+    symbolOnly?: boolean;
+  }
+): string {
   const keywords = parseKeywords(data.keywords);
+  const displayName = data.brandNameExact.trim() || data.brandName.trim();
+  const symbolOnly =
+    options?.symbolOnly === true ||
+    (data.symbolTextSeparate && data.logoType !== "wordmark");
+  const concept = options?.concept;
 
   const parts = [
-    `Award-worthy professional logo design for brand "${data.brandName}"`,
-    LOGO_TYPE_PROMPTS[data.logoType as LogoType],
-    STYLE_PROMPTS[data.style as DesignStyle],
-    buildColorPrompt(data.colors),
+    `Professional logo design draft (not a mockup) for brand "${displayName}"`,
   ];
+
+  if (concept) {
+    parts.push(`Selected concept title: ${concept.title}`);
+    parts.push(`Core idea: ${concept.coreIdea}`);
+    parts.push(`Symbol structure: ${concept.symbolStructure}`);
+    if (!symbolOnly) {
+      parts.push(`Typography direction: ${concept.typographyDirection}`);
+    }
+    parts.push(`Color rationale: ${concept.colorRationale}`);
+    parts.push(`Must stay distinct from other directions: ${concept.differentiation}`);
+  }
+
+  if (symbolOnly) {
+    parts.push(
+      "Create a standalone symbol mark only. No letters, no brand name, no numbers, no typography in the image"
+    );
+  } else {
+    parts.push(LOGO_TYPE_PROMPTS[data.logoType as LogoType]);
+    parts.push(
+      `Brand lettering must spell exactly: "${displayName}". Do not misspell or invent alternate spellings`
+    );
+  }
+
+  parts.push(STYLE_PROMPTS[data.style as DesignStyle]);
+  parts.push(buildColorPrompt(data.colors));
 
   if (data.industry) {
     parts.push(`Industry context: ${data.industry}`);
@@ -164,6 +203,18 @@ export function buildLogoPrompt(data: LogoFormData): string {
   }
 
   parts.push(buildVisualMetaphors(keywords, data.moods));
+
+  if (data.targetAudience.trim()) {
+    parts.push(`Primary audience: ${data.targetAudience.trim()}`);
+  }
+  if (data.coreValues.trim()) {
+    parts.push(`Core values: ${data.coreValues.trim()}`);
+  }
+  if (data.usageMedia.length > 0) {
+    parts.push(
+      `Must remain clear for these media: ${data.usageMedia.join(", ")}`
+    );
+  }
 
   if (data.symbolMetaphor.trim()) {
     parts.push(
@@ -178,7 +229,7 @@ export function buildLogoPrompt(data: LogoFormData): string {
   // 참고 이미지가 있으면 스타일 영감으로만 사용하고 복제는 금지
   if (data.referenceImages?.length > 0) {
     parts.push(
-      `Use the attached reference image${data.referenceImages.length > 1 ? "s" : ""} as visual inspiration for style, silhouette, geometry, spacing, and mood. Create an original logo for brand "${data.brandName}". Do not copy the reference mark, do not reuse its letterforms or brand name, and do not include any text from the reference image`
+      `Use the attached reference image${data.referenceImages.length > 1 ? "s" : ""} as visual inspiration for style, silhouette, geometry, spacing, and mood. Create an original logo for brand "${displayName}". Do not copy the reference mark, do not reuse its letterforms or brand name, and do not include any text from the reference image`
     );
   }
 
@@ -188,7 +239,7 @@ export function buildLogoPrompt(data: LogoFormData): string {
   }
 
   parts.push(
-    "Vector-style flat design, masterful use of negative space, distinctive memorable silhouette, scalable brand identity, transparent background, isolated logo mark on alpha channel, no mockup, no photorealistic elements, no scene or environment"
+    "Flat design suitable for brand identity, masterful use of negative space, distinctive memorable silhouette, scalable mark, transparent background, isolated logo on alpha channel, no business card mockup, no storefront mockup, no photorealistic scene or environment"
   );
   parts.push(NEGATIVE_PROMPT);
 

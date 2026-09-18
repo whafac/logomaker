@@ -7,6 +7,8 @@ import {
   INDUSTRY_KEYWORD_SUGGESTIONS,
   MOOD_OPTIONS,
   AVOID_STYLE_OPTIONS,
+  USAGE_MEDIA_OPTIONS,
+  UsageMedia,
   parseKeywords,
 } from "@/types/logo";
 import {
@@ -108,6 +110,18 @@ export default function StepDetails({ data, onChange }: StepDetailsProps) {
     if (data.avoidStyles.length >= 2) return;
     onChange({ avoidStyles: [...data.avoidStyles, style] });
   };
+
+  // 사용 매체 토글
+  const handleMediaToggle = (media: UsageMedia) => {
+    const selected = data.usageMedia ?? [];
+    if (selected.includes(media)) {
+      onChange({ usageMedia: selected.filter((item) => item !== media) });
+      return;
+    }
+    onChange({ usageMedia: [...selected, media] });
+  };
+
+  const canSeparateSymbol = data.logoType !== "wordmark";
 
   return (
     <StepWrapper
@@ -214,6 +228,88 @@ export default function StepDetails({ data, onChange }: StepDetailsProps) {
               );
             })}
           </div>
+        </div>
+
+        {/* 브리프: 고객·가치·매체 */}
+        <div>
+          <label className="mb-2 block text-sm font-medium text-slate-700">
+            주요 고객
+            <span className="ml-2 text-xs font-normal text-slate-400">선택</span>
+          </label>
+          <input
+            type="text"
+            className="input-field"
+            placeholder="예: 중소기업 마케팅 담당자, 20대 카페 고객"
+            value={data.targetAudience}
+            onChange={(e) => onChange({ targetAudience: e.target.value })}
+            maxLength={120}
+          />
+        </div>
+
+        <div>
+          <label className="mb-2 block text-sm font-medium text-slate-700">
+            핵심 가치
+            <span className="ml-2 text-xs font-normal text-slate-400">선택</span>
+          </label>
+          <input
+            type="text"
+            className="input-field"
+            placeholder="예: 빠르고 정확한 연결, 따뜻한 환대"
+            value={data.coreValues}
+            onChange={(e) => onChange({ coreValues: e.target.value })}
+            maxLength={120}
+          />
+        </div>
+
+        <div>
+          <label className="mb-2 block text-sm font-medium text-slate-700">
+            사용 매체
+            <span className="ml-2 text-xs font-normal text-slate-400">선택</span>
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {USAGE_MEDIA_OPTIONS.map((media) => {
+              const isSelected = (data.usageMedia ?? []).includes(media);
+              return (
+                <button
+                  key={media}
+                  type="button"
+                  className={`rounded-full px-4 py-2 text-sm transition-all ${
+                    isSelected
+                      ? "bg-brand-600 text-white"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  }`}
+                  onClick={() => handleMediaToggle(media)}
+                >
+                  {media}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 심볼·텍스트 분리 옵션 */}
+        <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+          <label className="flex items-start gap-3">
+            <input
+              type="checkbox"
+              className="mt-1"
+              checked={canSeparateSymbol && data.symbolTextSeparate}
+              disabled={!canSeparateSymbol}
+              onChange={(e) =>
+                onChange({ symbolTextSeparate: e.target.checked })
+              }
+            />
+            <span>
+              <span className="block text-sm font-medium text-slate-800">
+                심볼만 생성 후 브랜드명은 편집 가능하게 조합
+              </span>
+              <span className="mt-1 block text-xs text-slate-500">
+                {canSeparateSymbol
+                  ? "AI가 글자 없이 심볼 시안만 만들고, 결과 화면 캔버스에서 브랜드명을 정확한 표기로 붙입니다."
+                  : "워드마크 유형에서는 사용할 수 없습니다."}
+              </span>
+            </span>
+          </label>
         </div>
 
         {/* 상징/메타포 (선택) */}

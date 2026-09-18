@@ -67,18 +67,20 @@ export default function EditGuideModal({ isOpen, onClose }: EditGuideModalProps)
           </section>
 
           <section>
-            <h4 className="mb-2 font-semibold text-brand-700">SVG 벡터 파일</h4>
+            <h4 className="mb-2 font-semibold text-brand-700">
+              트레이싱 SVG 안내
+            </h4>
             <ul className="list-disc space-y-1 pl-5 text-slate-600">
-              <li>무한 확대 가능 (명함, 간판, 웹 favicon)</li>
-              <li>Illustrator / Figma / Canva에서 import 가능</li>
-              <li>색상·크기 변경이 PNG보다 자유로움</li>
-              <li>복잡한 로고는 SVG 변환 품질이 다를 수 있음</li>
+              <li>PNG를 자동 트레이싱한 근사 SVG입니다</li>
+              <li>실제 벡터 경로가 있는 원본 로고가 아닙니다</li>
+              <li>단순 확대·색 변경용으로만 참고하세요</li>
+              <li>정밀 편집은 PNG + 캔버스/Illustrator를 권장합니다</li>
             </ul>
           </section>
 
           <p className="rounded-xl bg-amber-50 px-4 py-3 text-xs text-amber-800">
-            AI 생성 로고는 시안입니다. 상업적 사용 전 상표권 중복 여부를
-            확인하세요.
+            AI 결과는 로고 원본 시안입니다. 명함·간판 등 적용 목업과 구분되며,
+            상업 사용 전 상표·유사 디자인 점검은 별도로 하세요.
           </p>
         </div>
 

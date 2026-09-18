@@ -6,9 +6,34 @@ export interface ReferenceImage {
   dataUrl: string;
 }
 
+// 생성 전 제안되는 디자인 콘셉트
+export interface LogoConcept {
+  id: string;
+  title: string;
+  coreIdea: string;
+  symbolStructure: string;
+  typographyDirection: string;
+  colorRationale: string;
+  differentiation: string;
+}
+
+// 사용 매체 선택 옵션
+export const USAGE_MEDIA_OPTIONS = [
+  "웹/앱",
+  "명함",
+  "간판/사이니지",
+  "SNS",
+  "인쇄물",
+  "패키지",
+] as const;
+
+export type UsageMedia = (typeof USAGE_MEDIA_OPTIONS)[number];
+
 // 로고 생성 위저드에서 수집하는 사용자 입력 타입
 export interface LogoFormData {
   brandName: string;
+  /** 로고에 표기할 정확한 철자/띄어쓰기 */
+  brandNameExact: string;
   logoType: LogoType | "";
   style: DesignStyle | "";
   colors: string[];
@@ -19,6 +44,17 @@ export interface LogoFormData {
   symbolMetaphor: string;
   description: string;
   referenceImages: ReferenceImage[];
+  /** 주요 고객 */
+  targetAudience: string;
+  /** 핵심 가치 */
+  coreValues: string;
+  /** 사용 매체 */
+  usageMedia: UsageMedia[];
+  /**
+   * 심볼만 AI 생성 후 캔버스에서 브랜드명 조합
+   * (워드마크 유형에서는 사용하지 않음)
+   */
+  symbolTextSeparate: boolean;
 }
 
 export type LogoType =
@@ -180,6 +216,7 @@ export const INDUSTRY_KEYWORD_SUGGESTIONS: Record<string, string[]> = {
 
 export const INITIAL_FORM_DATA: LogoFormData = {
   brandName: "",
+  brandNameExact: "",
   logoType: "",
   style: "",
   colors: ["#2563eb", "#1e40af", "#ffffff"],
@@ -190,6 +227,10 @@ export const INITIAL_FORM_DATA: LogoFormData = {
   symbolMetaphor: "",
   description: "",
   referenceImages: [],
+  targetAudience: "",
+  coreValues: "",
+  usageMedia: [],
+  symbolTextSeparate: false,
 };
 
 export const WIZARD_STEPS = [
@@ -198,7 +239,8 @@ export const WIZARD_STEPS = [
   { id: 3, title: "디자인 스타일", subtitle: "원하는 분위기를 선택하세요" },
   { id: 4, title: "브랜드 정보", subtitle: "업종과 키워드를 입력하면 더 센스 있는 로고가 만들어져요" },
   { id: 5, title: "색상", subtitle: "업종에 어울리는 컬러 팔레트를 선택하세요" },
-  { id: 6, title: "확인 및 생성", subtitle: "입력 내용을 확인하고 로고를 만드세요" },
+  { id: 6, title: "확인", subtitle: "입력 내용을 확인하고 디자인 방향을 제안받으세요" },
+  { id: 7, title: "콘셉트 선택", subtitle: "서로 다른 디자인 방향 중 하나를 고른 뒤 시안을 생성하세요" },
 ];
 
 // 키워드 문자열을 배열로 파싱

@@ -27,6 +27,8 @@ interface LogoResultProps {
   colors: string[];
   usage: ImageUsageInfo;
   cost: ImageCostInfo;
+  symbolOnly?: boolean;
+  durationMs?: number;
   onRegenerate: () => void;
   onReset: () => void;
 }
@@ -39,11 +41,14 @@ export default function LogoResult({
   colors,
   usage,
   cost,
+  symbolOnly = false,
+  durationMs,
   onRegenerate,
   onReset,
 }: LogoResultProps) {
   const [showGuide, setShowGuide] = useState(false);
-  const [showEditor, setShowEditor] = useState(false);
+  // 심볼 전용 시안은 브랜드명 조합을 위해 편집기를 기본으로 연다
+  const [showEditor, setShowEditor] = useState(symbolOnly);
   const [isDownloadingKit, setIsDownloadingKit] = useState(false);
   const safeName = toSafeFileName(brandName);
 
@@ -119,6 +124,7 @@ export default function LogoResult({
         imageUrl={imageUrl}
         brandName={brandName}
         colors={colors}
+        initialBrandText={symbolOnly ? brandName : null}
         onClose={() => setShowEditor(false)}
       />
     );
@@ -128,14 +134,17 @@ export default function LogoResult({
     <>
       <div className="animate-slide-up text-center">
         <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-green-50 px-4 py-1.5 text-sm font-medium text-green-700">
-          <span>✓</span> 로고 생성 완료!
+          <span>✓</span>{" "}
+          {symbolOnly ? "심볼 시안 생성 완료!" : "로고 시안 생성 완료!"}
         </div>
 
         <h2 className="mt-4 text-2xl font-bold text-slate-900">
-          {brandName} 로고
+          {brandName} {symbolOnly ? "심볼" : "로고"}
         </h2>
         <p className="mt-1 text-slate-500">
-          앱 내 캔버스 편집 또는 PNG · SVG · 브랜드 키트로 내보내기
+          {symbolOnly
+            ? "심볼 시안입니다. 캔버스에서 브랜드명을 정확한 표기로 조합하세요."
+            : "로고 원본 시안입니다. 명함·간판 목업과 구분되며, 캔버스 편집 또는 PNG · 트레이싱 SVG로 내보낼 수 있습니다."}
         </p>
 
         {/* 투명 배경 미리보기 (체커보드 패턴) */}
@@ -165,20 +174,20 @@ export default function LogoResult({
             className="btn-primary"
             onClick={() => setShowEditor(true)}
           >
-            캔버스에서 편집하기
+            캔버스에서 {symbolOnly ? "브랜드명 조합하기" : "편집하기"}
           </button>
 
           <button type="button" className="btn-secondary" onClick={handleDownloadPng}>
-            PNG 다운로드 (투명 배경)
+            PNG 다운로드 (투명 배경 · 시안)
           </button>
 
           {svg ? (
             <button type="button" className="btn-secondary" onClick={handleDownloadSvg}>
-              SVG 다운로드 (벡터)
+              트레이싱 SVG 다운로드 (근사 벡터)
             </button>
           ) : (
             <p className="text-xs text-amber-600">
-              SVG 변환에 실패했습니다. PNG 파일을 Canva/Photoshop에서 사용해 주세요.
+              SVG 트레이싱에 실패했습니다. PNG 파일을 Canva/Photoshop에서 사용해 주세요.
             </p>
           )}
 
@@ -217,8 +226,10 @@ export default function LogoResult({
         <div className="mx-auto mt-6 max-w-md rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-left text-xs text-slate-600">
           <p className="font-medium text-slate-800">브랜드 키트 ZIP 포함 파일</p>
           <ul className="mt-2 list-inside list-disc space-y-1">
-            <li>{safeName}-logo.png — 투명 배경 PNG (1024×1024)</li>
-            <li>{safeName}-logo.svg — 벡터 SVG (편집·확대용)</li>
+            <li>{safeName}-logo.png — 투명 배경 PNG 시안 (1024×1024)</li>
+            <li>
+              {safeName}-logo.svg — PNG를 트레이싱한 근사 SVG (원본 벡터 경로 아님)
+            </li>
             <li>brand-colors.txt — HEX 컬러 코드</li>
             <li>EDIT-GUIDE.txt — Canva/Photoshop 편집 방법</li>
           </ul>
@@ -230,7 +241,10 @@ export default function LogoResult({
             이번 생성 사용량
           </h3>
           <p className="mt-1 text-xs text-slate-500">
-            gpt-image-1.5 · medium · 1024×1024 · 투명 배경
+            gpt-image-1.5 · medium · 1024×1024 · 투명 배경 · 로고 시안
+            {typeof durationMs === "number"
+              ? ` · ${(durationMs / 1000).toFixed(1)}초`
+              : ""}
           </p>
 
           <dl className="mt-4 space-y-2 text-sm">
@@ -284,7 +298,8 @@ export default function LogoResult({
           </div>
 
           <p className="mt-3 text-xs leading-relaxed text-slate-400">
-            OpenAI 공식 단가 기준 추정치이며, SVG 변환은 서버에서 무료 처리됩니다.
+            OpenAI 공식 단가 기준 추정치입니다. SVG는 서버에서 PNG를 트레이싱한
+            근사본이며, 실제 벡터 경로가 있는 원본 로고가 아닙니다.
           </p>
         </div>
       </div>

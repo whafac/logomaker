@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import {
   LogoFormData,
+  LogoConcept,
   INITIAL_FORM_DATA,
   WIZARD_STEPS,
   isKeywordsValid,
@@ -14,6 +15,7 @@ import StepStyle from "./steps/StepStyle";
 import StepColors from "./steps/StepColors";
 import StepDetails from "./steps/StepDetails";
 import StepReview from "./steps/StepReview";
+import StepConcepts from "./steps/StepConcepts";
 import LogoResult from "./LogoResult";
 import { ImageCostInfo, ImageUsageInfo } from "@/lib/cost";
 
@@ -22,12 +24,19 @@ interface GenerationResult {
   svg: string | null;
   usage: ImageUsageInfo;
   cost: ImageCostInfo;
+  symbolOnly: boolean;
+  durationMs?: number;
 }
 
 // 멀티스텝 로고 생성 위저드 메인 컴포넌트
 export default function LogoWizard() {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<LogoFormData>(INITIAL_FORM_DATA);
+  const [concepts, setConcepts] = useState<LogoConcept[]>([]);
+  const [selectedConceptId, setSelectedConceptId] = useState<string | null>(
+    null
+  );
+  const [isLoadingConcepts, setIsLoadingConcepts] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [result, setResult] = useState<GenerationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -36,7 +45,14 @@ export default function LogoWizard() {
 
   // 폼 데이터 업데이트
   const handleChange = useCallback((updates: Partial<LogoFormData>) => {
-    setFormData((prev) => ({ ...prev, ...updates }));
+    setFormData((prev) => {
+      const next = { ...prev, ...updates };
+      // 워드마크로 바꾸면 심볼 분리 옵션 해제
+      if (next.logoType === "wordmark") {
+        next.symbolTextSeparate = false;
+      }
+      return next;
+    });
   }, []);
 
   // 현재 스텝 유효성 검사
@@ -73,8 +89,43 @@ export default function LogoWizard() {
     }
   };
 
-  // 로고 생성 API 호출
+  // 콘셉트 3안 요청
+  const handleRequestConcepts = async () => {
+    setIsLoadingConcepts(true);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/concepts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "콘셉트 제안에 실패했습니다.");
+      }
+
+      setConcepts(data.concepts ?? []);
+      setSelectedConceptId(data.concepts?.[0]?.id ?? null);
+      setCurrentStep(7);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "콘셉트 제안 중 오류가 발생했습니다."
+      );
+    } finally {
+      setIsLoadingConcepts(false);
+    }
+  };
+
+  // 선택한 콘셉트로 로고 시안 생성
   const handleGenerate = async () => {
+    const selectedConcept = concepts.find((c) => c.id === selectedConceptId);
+    if (!selectedConcept) {
+      setError("디자인 콘셉트를 선택해 주세요.");
+      return;
+    }
+
     setIsGenerating(true);
     setError(null);
 
@@ -82,7 +133,10 @@ export default function LogoWizard() {
       const response = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          selectedConcept,
+        }),
       });
 
       const data = await response.json();
@@ -96,6 +150,8 @@ export default function LogoWizard() {
         svg: data.svg ?? null,
         usage: data.usage,
         cost: data.cost,
+        symbolOnly: Boolean(data.symbolOnly),
+        durationMs: data.durationMs,
       });
     } catch (err) {
       setError(
@@ -110,16 +166,25 @@ export default function LogoWizard() {
   const handleReset = () => {
     setFormData(INITIAL_FORM_DATA);
     setCurrentStep(1);
+    setConcepts([]);
+    setSelectedConceptId(null);
     setResult(null);
     setError(null);
   };
 
-  // 결과 화면에서 확인 단계(6단계)로 돌아가 설정 수정 후 재생성
+  // 콘셉트 단계로 돌아가 다른 방향 선택 또는 재제안
   const handleRegenerate = () => {
     setResult(null);
     setError(null);
-    setCurrentStep(6);
+    if (concepts.length > 0) {
+      setCurrentStep(7);
+    } else {
+      setCurrentStep(6);
+    }
   };
+
+  const displayName =
+    formData.brandNameExact.trim() || formData.brandName;
 
   // 결과 화면
   if (result) {
@@ -127,10 +192,12 @@ export default function LogoWizard() {
       <LogoResult
         imageUrl={result.imageUrl}
         svg={result.svg}
-        brandName={formData.brandName}
+        brandName={displayName}
         colors={formData.colors}
         usage={result.usage}
         cost={result.cost}
+        symbolOnly={result.symbolOnly}
+        durationMs={result.durationMs}
         onRegenerate={handleRegenerate}
         onReset={handleReset}
       />
@@ -141,14 +208,12 @@ export default function LogoWizard() {
     <div>
       <StepIndicator currentStep={currentStep} totalSteps={totalSteps} />
 
-      {/* 에러 메시지 */}
       {error && (
         <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
         </div>
       )}
 
-      {/* 스텝별 컨텐츠 */}
       {currentStep === 1 && (
         <StepBrandName data={formData} onChange={handleChange} />
       )}
@@ -167,12 +232,20 @@ export default function LogoWizard() {
       {currentStep === 6 && (
         <StepReview
           data={formData}
+          isLoadingConcepts={isLoadingConcepts}
+          onRequestConcepts={handleRequestConcepts}
+        />
+      )}
+      {currentStep === 7 && (
+        <StepConcepts
+          concepts={concepts}
+          selectedId={selectedConceptId}
           isGenerating={isGenerating}
+          onSelect={setSelectedConceptId}
           onGenerate={handleGenerate}
         />
       )}
 
-      {/* 네비게이션 버튼 (6단계는 StepReview에서 생성 버튼 처리) */}
       {currentStep < 6 && (
         <div className="mt-10 flex items-center justify-between">
           <button
@@ -198,6 +271,27 @@ export default function LogoWizard() {
         <div className="mt-6 text-center">
           <button type="button" className="btn-secondary" onClick={handlePrev}>
             ← 이전 단계로
+          </button>
+        </div>
+      )}
+
+      {currentStep === 7 && (
+        <div className="mt-6 flex justify-center gap-3">
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => setCurrentStep(6)}
+            disabled={isGenerating}
+          >
+            ← 확인 단계로
+          </button>
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={handleRequestConcepts}
+            disabled={isGenerating || isLoadingConcepts}
+          >
+            콘셉트 다시 제안
           </button>
         </div>
       )}

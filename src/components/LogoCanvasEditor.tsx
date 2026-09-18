@@ -17,6 +17,8 @@ interface LogoCanvasEditorProps {
   imageUrl: string;
   brandName: string;
   colors: string[];
+  /** 심볼 전용 시안일 때 브랜드명 텍스트를 자동 추가 */
+  initialBrandText?: string | null;
   onClose: () => void;
 }
 
@@ -28,6 +30,7 @@ export default function LogoCanvasEditor({
   imageUrl,
   brandName,
   colors,
+  initialBrandText = null,
   onClose,
 }: LogoCanvasEditorProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -71,6 +74,8 @@ export default function LogoCanvasEditor({
     canvas.requestRenderAll();
   }, []);
 
+  const primaryColor = colors[0] ?? "#2563eb";
+
   // 캔버스 초기화 및 로고 로드
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -113,6 +118,27 @@ export default function LogoCanvasEditor({
         canvas.add(logo);
         centerLogo(canvas, logo);
         logoRef.current = logo;
+
+        // 심볼 시안인 경우 정확한 브랜드명 텍스트를 바로 올려 조합
+        if (initialBrandText?.trim()) {
+          try {
+            await loadEditorFont(DEFAULT_EDITOR_FONT);
+            const brandText = new IText(initialBrandText.trim(), {
+              left: CANVAS_SIZE / 2,
+              top: CANVAS_SIZE * 0.78,
+              originX: "center",
+              originY: "center",
+              fontFamily: DEFAULT_EDITOR_FONT.family,
+              fontSize: 32,
+              fill: primaryColor,
+              fontWeight: "600",
+            });
+            canvas.add(brandText);
+          } catch {
+            /* 폰트 실패 시 심볼만 표시 */
+          }
+        }
+
         setIsReady(true);
       } catch {
         if (!cancelled) {
@@ -133,7 +159,7 @@ export default function LogoCanvasEditor({
         objectUrlRef.current = null;
       }
     };
-  }, [imageUrl, centerLogo]);
+  }, [imageUrl, centerLogo, initialBrandText, primaryColor]);
 
   // 기본 폰트(Noto Sans KR) 선로드
   useEffect(() => {
